@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>SANSA — Ambient 3D Sanctuary Reference</title>
+  <title>Mountain Sanctuary — Ambient 3D Meditation Hall</title>
   <style>
     :root {
       --glass-bg: rgba(24, 24, 22, 0.72);
@@ -21,7 +21,7 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
-      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     body, html {
@@ -235,7 +235,7 @@
       100% { opacity: 0; transform: translateY(-6px); }
     }
 
-    /* Center Patronage Modal (Gongyangmi / Offering Rice) */
+    /* Center Patronage Modal (Offering Rice) */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -425,6 +425,82 @@
       color: var(--text-secondary);
       text-align: center;
     }
+
+    /* Keyboard Controls Panel (Bottom Right) */
+    .hud-keyboard-panel {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 12;
+      width: 248px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .hud-keyboard-panel.hidden {
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+
+    .kb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-gold);
+      margin-bottom: 2px;
+    }
+
+    .kb-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .kb-keys {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 19px;
+      padding: 0 5px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text-primary);
+      font-size: 10px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.1s;
+    }
+
+    .kbd.pressed {
+      background: rgba(230, 193, 90, 0.32);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+      transform: scale(0.94);
+    }
   </style>
 </head>
 <body>
@@ -434,21 +510,22 @@
 
   <!-- Top Left Room Status & Server Selector -->
   <div class="hud-top-left">
-    <button class="glass-pill" id="room-pill" title="Click to switch server channel">
+    <button class="glass-pill" id="room-pill" title="Click or press Tab to switch server channel">
       <span>⇥</span>
       <span id="room-name">mountain temple 56</span>
       <span class="instance-count" id="room-occupancy">· 04/100</span>
     </button>
   </div>
 
-  <!-- Top Right Audio & Offering Controls -->
+  <!-- Top Right Audio, Camera, Offerings & Keyboard Guide Controls -->
   <div class="hud-top-right">
     <div class="glass-pill control-group">
-      <button class="icon-btn active" id="btn-open-modal" title="Add Offering Rice (Gongyangmi)">🍚</button>
-      <button class="icon-btn" id="btn-toggle-audio" title="Toggle Ambient & Chanting Audio">🔇</button>
-      <button class="icon-btn" id="btn-reset-cam" title="Reset Camera View">⌖</button>
+      <button class="icon-btn" id="btn-open-modal" title="Offerings & Support (O)">🍚</button>
+      <button class="icon-btn" id="btn-toggle-audio" title="Toggle Ambient & Chanting Audio (M)">🔇</button>
+      <button class="icon-btn" id="btn-reset-cam" title="Reset Camera View (R)">⌖</button>
+      <button class="icon-btn active" id="btn-toggle-kb" title="Toggle Keyboard Controls (H)">⌨</button>
     </div>
-    <div class="glass-pill tooltip-pill" id="audio-status-label">Stopping the Chanting</div>
+    <div class="glass-pill tooltip-pill" id="audio-status-label">Chanting & Wind Muted</div>
   </div>
 
   <!-- Non-Verbal Toast Container -->
@@ -456,45 +533,113 @@
 
   <!-- Bottom Left Session Metrics -->
   <div class="hud-bottom-left">
-    <div>Me: <span class="counter-Highlight" id="my-monk-name">Slow Step (느린 발걸음)</span></div>
+    <div>Me: <span class="counter-Highlight" id="my-monk-name">Slow Step</span></div>
     <div>108 Bows: <span class="counter-Highlight" id="bow-counter">0</span> · Prayer Beads: <span class="counter-Highlight" id="bead-counter">0 / 108</span></div>
   </div>
 
   <!-- Bottom Action Dock -->
   <div class="hud-bottom-dock">
-    <button class="dock-btn" id="act-clasp">
+    <button class="dock-btn" id="act-clasp" title="Clasp Hands Greeting (Key: 3)">
       <span class="dock-icon">🙏</span>
       <span class="dock-label">clasp (3)</span>
     </button>
-    <button class="dock-btn" id="act-bow">
+    <button class="dock-btn" id="act-bow" title="Toggle 108 Bows (Key: 1 or Space)">
       <span class="dock-icon">🙇</span>
       <span class="dock-label">bowing (1)</span>
     </button>
-    <button class="dock-btn" id="act-moktak">
+    <button class="dock-btn" id="act-gong" title="Strike Wooden Gong (Key: 4 or 5)">
       <span class="dock-icon">🔔</span>
       <span class="dock-label">wooden gong (5)</span>
     </button>
-    <button class="dock-btn" id="act-beads">
+    <button class="dock-btn" id="act-beads" title="Count Prayer Beads (Key: 2)">
       <span class="dock-icon">📿</span>
       <span class="dock-label">prayer beads (2)</span>
     </button>
   </div>
 
-  <!-- Center Offering Rice (Gongyangmi) Patronage Modal -->
-  <div class="modal-backdrop" id="patronage-backdrop">
+  <!-- Bottom Right Keyboard Controls Guide -->
+  <div class="hud-keyboard-panel" id="kb-panel">
+    <div class="kb-header">
+      <span>Keyboard Controls</span>
+      <span>H / ?</span>
+    </div>
+    <div class="kb-row">
+      <span>Move Avatar</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="w">W</kbd>
+        <kbd class="kbd" data-key="a">A</kbd>
+        <kbd class="kbd" data-key="s">S</kbd>
+        <kbd class="kbd" data-key="d">D</kbd>
+        <span>/ Arrows</span>
+      </span>
+    </div>
+    <div class="kb-row">
+      <span>Sit on Cushion</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="f">F</kbd>
+        <span>/</span>
+        <kbd class="kbd" data-key="enter">Enter</kbd>
+      </span>
+    </div>
+    <div class="kb-row">
+      <span>108 Bows</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="1">1</kbd>
+        <span>/</span>
+        <kbd class="kbd" data-key=" ">Space</kbd>
+      </span>
+    </div>
+    <div class="kb-row">
+      <span>Prayer Beads</span>
+      <span class="kb-keys"><kbd class="kbd" data-key="2">2</kbd></span>
+    </div>
+    <div class="kb-row">
+      <span>Clasp Hands</span>
+      <span class="kb-keys"><kbd class="kbd" data-key="3">3</kbd></span>
+    </div>
+    <div class="kb-row">
+      <span>Wooden Gong</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="4">4</kbd>
+        <span>/</span>
+        <kbd class="kbd" data-key="5">5</kbd>
+      </span>
+    </div>
+    <div class="kb-row">
+      <span>Orbit / Zoom Cam</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="q">Q</kbd>
+        <kbd class="kbd" data-key="e">E</kbd>
+        <kbd class="kbd" data-key="+">+</kbd>
+        <kbd class="kbd" data-key="-">-</kbd>
+        <kbd class="kbd" data-key="r">R</kbd>
+      </span>
+    </div>
+    <div class="kb-row">
+      <span>Audio / Room / Offer</span>
+      <span class="kb-keys">
+        <kbd class="kbd" data-key="m">M</kbd>
+        <kbd class="kbd" data-key="tab">Tab</kbd>
+        <kbd class="kbd" data-key="o">O</kbd>
+      </span>
+    </div>
+  </div>
+
+  <!-- Center Offering Rice Patronage Modal -->
+  <div class="modal-backdrop hidden" id="patronage-backdrop">
     <div class="patronage-modal">
       <div class="modal-header">
-        <span class="modal-title">공양미 보태기</span>
-        <button class="close-btn" id="btn-close-modal">✕</button>
+        <span class="modal-title">Add Offering Rice</span>
+        <button class="close-btn" id="btn-close-modal" title="Close (Esc)">✕</button>
       </div>
-      <div class="modal-subtitle">보시해 주신 마음, 감사히 받겠습니다. 🙇🏻‍♂️</div>
+      <div class="modal-subtitle">Thank you sincerely for your generous support. 🙇🏻‍♂️</div>
 
       <div class="bank-card">
         <div class="bank-info">
-          <span class="bank-name">토스뱅크 · 박진원</span>
+          <span class="bank-name">Sanctuary Bank · Sanctuary Foundation</span>
           <span class="bank-number" id="acct-num">1002-7657-4757</span>
         </div>
-        <button class="copy-btn" id="btn-copy-acct">복사</button>
+        <button class="copy-btn" id="btn-copy-acct">Copy</button>
       </div>
 
       <div class="qr-card">
@@ -502,15 +647,15 @@
         <div class="qr-placeholder">
           <div class="qr-avatar-badge">🧘🏻</div>
         </div>
-        <div class="qr-owner">박진원</div>
+        <div class="qr-owner">Sanctuary Foundation</div>
       </div>
 
       <button class="bmac-btn" id="btn-bmac">
         <span>🥤 Buy me a coffee</span>
-        <span>공양미 보내기</span>
+        <span>Send Offering</span>
       </button>
 
-      <div class="modal-footer">공양미는 서버 운영과 콘텐츠 제작에 사용됩니다. 🙏</div>
+      <div class="modal-footer">Offerings support server hosting and sanctuary upkeep. 🙏</div>
     </div>
   </div>
 
@@ -521,11 +666,11 @@
     // 1. PROCEDURAL POETIC NAMING & APPLICATION STATE
     // =========================================================================
     const POETIC_NAMES = [
-      "Slow Step (느린 발걸음)",
-      "Friendly Moss (다정한 이끼)",
-      "Quiet Cloud (고요한 구름)",
-      "Small Pine Needle (작은 솔잎)",
-      "Subtle Moonlight (은은한 달빛)"
+      "Slow Step",
+      "Friendly Moss",
+      "Quiet Cloud",
+      "Small Pine Needle",
+      "Subtle Moonlight"
     ];
     document.getElementById('my-monk-name').textContent =
       POETIC_NAMES[Math.floor(Math.random() * POETIC_NAMES.length)];
@@ -537,8 +682,11 @@
       audioEnabled: false,
       roomNumber: 56,
       targetPosition: new THREE.Vector3(0, 0, 3.2),
+      targetYaw: 0,
       activeCushionIndex: -1
     };
+
+    const keysPressed = new Set();
 
     function showToast(message) {
       const container = document.getElementById('toast-container');
@@ -594,7 +742,7 @@
       whiteNoise.start(0);
     }
 
-    // Client-local percussive sound (Moktak / Bead click / Temple Bell)
+    // Client-local percussive sound (Wooden Gong / Bead click / Temple Bell)
     function playAcousticStrike(freq = 620, decay = 0.18, type = 'triangle') {
       if (!audioCtx) initAudio();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -614,7 +762,7 @@
       osc.stop(audioCtx.currentTime + decay);
     }
 
-    // Background tab auto-mute (Matching Sansa's production spec)
+    // Background tab auto-mute
     document.addEventListener('visibilitychange', () => {
       if (!windGainNode || !audioCtx) return;
       if (document.hidden) {
@@ -708,7 +856,7 @@
     scene.add(createStatue(-1.85, 0.92));   // Left Attendant Bodhisattva
     scene.add(createStatue(1.85, 0.92));    // Right Attendant Bodhisattva
 
-    // Gray Meditation Cushions (Bangseok) with Single-Occupancy State
+    // Gray Meditation Cushions with Single-Occupancy State
     const cushions = [];
     const cushionGeo = new THREE.BoxGeometry(0.95, 0.08, 0.95);
     const cushionMat = new THREE.MeshStandardMaterial({ color: 0x525450, roughness: 0.9 });
@@ -727,7 +875,7 @@
       }
     }
 
-    // Novice Monk (Dongjaseung) Avatar Builder
+    // Novice Monk Avatar Builder
     function createMonkAvatar(robeColor = 0x7b8076) {
       const monk = new THREE.Group();
       const bodyPivot = new THREE.Group();
@@ -767,7 +915,7 @@
     playerMonk.position.copy(state.targetPosition);
     scene.add(playerMonk);
 
-    // Silent Co-Present Peer Avatars (Simulated Cloudflare Worker Peers)
+    // Silent Co-Present Peer Avatars
     const peerSeats = [2, 5, 11];
     const peers = peerSeats.map((seatIdx, i) => {
       cushions[seatIdx].userData.occupiedByPeer = true;
@@ -820,6 +968,7 @@
         }
         state.activeCushionIndex = hitCushion.userData.index;
         state.targetPosition.set(hitCushion.position.x, 0.08, hitCushion.position.z);
+        state.targetYaw = 0; // Face the altar
         return;
       }
 
@@ -830,11 +979,14 @@
         state.activeCushionIndex = -1;
         state.isBowing = false;
         document.getElementById('act-bow').classList.remove('active');
-        state.targetPosition.set(
-          Math.max(-7.5, Math.min(7.5, pt.x)),
-          0,
-          Math.max(-3.0, Math.min(6.5, pt.z))
-        );
+        const nextX = Math.max(-7.5, Math.min(7.5, pt.x));
+        const nextZ = Math.max(-3.0, Math.min(6.5, pt.z));
+        const dx = nextX - playerMonk.position.x;
+        const dz = nextZ - playerMonk.position.z;
+        if (Math.hypot(dx, dz) > 0.05) {
+          state.targetYaw = Math.atan2(-dx, -dz);
+        }
+        state.targetPosition.set(nextX, 0, nextZ);
       }
     });
 
@@ -843,117 +995,277 @@
     });
 
     // =========================================================================
-    // 5. RITUAL INTERACTIONS & UI EVENT BINDINGS
+    // 5. RITUAL INTERACTIONS, KEYBOARD CONTROLS & UI EVENT BINDINGS
     // =========================================================================
     function triggerClaspGreeting() {
       playerMonk.userData.hands.visible = true;
       playAcousticStrike(880, 0.45, 'sine');
-      showToast("합장으로 인사했어요 · Greeted nearby monks with joined hands");
-      setTimeout(() => { playerMonk.userData.hands.visible = false; }, 1400);
+      showToast("Greeted nearby monks with joined hands 🙏");
+      const btn = document.getElementById('act-clasp');
+      btn.classList.add('active');
+      setTimeout(() => {
+        playerMonk.userData.hands.visible = false;
+        btn.classList.remove('active');
+      }, 1400);
     }
 
     function toggleBowing() {
       state.isBowing = !state.isBowing;
       document.getElementById('act-bow').classList.toggle('active', state.isBowing);
       if (state.isBowing) {
-        showToast("Started 108 Bows · Press again to rise");
+        state.targetYaw = 0; // Face altar when bowing
+        showToast("Started 108 Bows · Press 1 or Space to rise");
       } else {
         playerMonk.userData.bodyPivot.rotation.x = 0;
       }
     }
 
-    function triggerMoktak() {
+    function triggerWoodenGong() {
       playAcousticStrike(540, 0.14, 'triangle');
-      const btn = document.getElementById('act-moktak');
+      const btn = document.getElementById('act-gong');
       btn.classList.add('active');
       setTimeout(() => btn.classList.remove('active'), 180);
     }
 
     function rollPrayerBead() {
       state.beadCount = (state.beadCount + 1) % 109;
+      const btn = document.getElementById('act-beads');
+      btn.classList.add('active');
+      setTimeout(() => btn.classList.remove('active'), 180);
       if (state.beadCount === 108) {
         playAcousticStrike(1046, 0.8, 'sine');
-        showToast("Completed 108 Prayer Beads (한 바퀴 완주) 🙏");
+        showToast("Completed a full cycle of 108 Prayer Beads 🙏");
       } else {
         playAcousticStrike(390, 0.09, 'sine');
       }
       document.getElementById('bead-counter').textContent = `${state.beadCount} / 108`;
     }
 
-    document.getElementById('act-clasp').addEventListener('click', triggerClaspGreeting);
-    document.getElementById('act-bow').addEventListener('click', toggleBowing);
-    document.getElementById('act-moktak').addEventListener('click', triggerMoktak);
-    document.getElementById('act-beads').addEventListener('click', rollPrayerBead);
+    function sitOnNearestCushion() {
+      let bestCushion = null;
+      let bestDist = Infinity;
+      for (const c of cushions) {
+        if (c.userData.occupiedByPeer) continue;
+        const d = Math.hypot(
+          c.position.x - playerMonk.position.x,
+          c.position.z - playerMonk.position.z
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          bestCushion = c;
+        }
+      }
+      if (bestCushion) {
+        state.activeCushionIndex = bestCushion.userData.index;
+        state.targetPosition.set(bestCushion.position.x, 0.08, bestCushion.position.z);
+        state.targetYaw = 0; // Face the altar
+        showToast("Seated on meditation cushion");
+      }
+    }
 
-    // Keyboard Shortcuts (Matching Sansa Temple Spec: 1/Space = Bow, 2 = Beads, 3 = Clasp, 5 = Moktak)
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '1' || e.key === ' ' || e.key === 'e' || e.key === 'E') toggleBowing();
-      if (e.key === '2') rollPrayerBead();
-      if (e.key === '3') triggerClaspGreeting();
-      if (e.key === '5') triggerMoktak();
-    });
-
-    // Audio Toggle
-    document.getElementById('btn-toggle-audio').addEventListener('click', (e) => {
+    function toggleAudio() {
       initAudio();
       state.audioEnabled = !state.audioEnabled;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       windGainNode.gain.setTargetAtTime(state.audioEnabled ? 0.35 : 0.0, audioCtx.currentTime, 0.2);
-      e.currentTarget.textContent = state.audioEnabled ? '🔊' : '🔇';
+      const btn = document.getElementById('btn-toggle-audio');
+      btn.textContent = state.audioEnabled ? '🔊' : '🔇';
+      btn.classList.toggle('active', state.audioEnabled);
       document.getElementById('audio-status-label').textContent =
-        state.audioEnabled ? 'Listening to Wind & Chanting' : 'Stopping the Chanting';
-    });
+        state.audioEnabled ? 'Listening to Wind & Chanting' : 'Chanting & Wind Muted';
+    }
 
-    // Camera Reset
-    document.getElementById('btn-reset-cam').addEventListener('click', () => {
+    function resetCamera() {
       camAngleH = 0;
       camAngleV = 0.32;
       camDistance = 9.5;
-    });
+      showToast("Camera view reset");
+    }
 
-    // Server Channel Switching Simulation
-    document.getElementById('room-pill').addEventListener('click', () => {
+    function switchRoomChannel() {
       state.roomNumber = (state.roomNumber % 100) + 1;
       const randomUsers = Math.floor(Math.random() * 85) + 2;
       document.getElementById('room-name').textContent = `mountain temple ${state.roomNumber}`;
       document.getElementById('room-occupancy').textContent = `· ${String(randomUsers).padStart(2, '0')}/100`;
-      showToast(`Connected to Cheongyeondang Hall #${state.roomNumber}`);
-    });
+      showToast(`Connected to Mountain Sanctuary Hall #${state.roomNumber}`);
+    }
 
-    // Modal Controls
     const modalBackdrop = document.getElementById('patronage-backdrop');
-    document.getElementById('btn-open-modal').addEventListener('click', () => {
-      modalBackdrop.classList.remove('hidden');
-    });
-    document.getElementById('btn-close-modal').addEventListener('click', () => {
-      modalBackdrop.classList.add('hidden');
-    });
+    const btnOpenModal = document.getElementById('btn-open-modal');
+
+    function togglePatronageModal(forceState) {
+      const shouldShow = typeof forceState === 'boolean'
+        ? forceState
+        : modalBackdrop.classList.contains('hidden');
+      modalBackdrop.classList.toggle('hidden', !shouldShow);
+      btnOpenModal.classList.toggle('active', shouldShow);
+    }
+
+    const kbPanel = document.getElementById('kb-panel');
+    const btnToggleKb = document.getElementById('btn-toggle-kb');
+
+    function toggleKeyboardPanel() {
+      const isHidden = kbPanel.classList.toggle('hidden');
+      btnToggleKb.classList.toggle('active', !isHidden);
+    }
+
+    document.getElementById('act-clasp').addEventListener('click', triggerClaspGreeting);
+    document.getElementById('act-bow').addEventListener('click', toggleBowing);
+    document.getElementById('act-gong').addEventListener('click', triggerWoodenGong);
+    document.getElementById('act-beads').addEventListener('click', rollPrayerBead);
+
+    document.getElementById('btn-toggle-audio').addEventListener('click', toggleAudio);
+    document.getElementById('btn-reset-cam').addEventListener('click', resetCamera);
+    document.getElementById('btn-toggle-kb').addEventListener('click', toggleKeyboardPanel);
+    document.getElementById('room-pill').addEventListener('click', switchRoomChannel);
+
+    btnOpenModal.addEventListener('click', () => togglePatronageModal());
+    document.getElementById('btn-close-modal').addEventListener('click', () => togglePatronageModal(false));
     modalBackdrop.addEventListener('click', (e) => {
-      if (e.target === modalBackdrop) modalBackdrop.classList.add('hidden');
+      if (e.target === modalBackdrop) togglePatronageModal(false);
     });
 
     document.getElementById('btn-copy-acct').addEventListener('click', () => {
       const acct = document.getElementById('acct-num').textContent;
       navigator.clipboard?.writeText(acct);
-      showToast("Copied Toss Bank account number to clipboard");
+      showToast("Copied Sanctuary Bank account number to clipboard");
     });
 
     document.getElementById('btn-bmac').addEventListener('click', () => {
       showToast("Opening Buy Me a Coffee patronage link...");
     });
 
+    // Helper for visual keycap highlight in the Keyboard Controls HUD
+    function setKeyHighlight(keyLower, isPressed) {
+      const kbdEl = document.querySelector(`.kbd[data-key="${CSS.escape(keyLower)}"]`);
+      if (kbdEl) kbdEl.classList.toggle('pressed', isPressed);
+    }
+
+    // Comprehensive Keyboard Controls Listener
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      keysPressed.add(key);
+      setKeyHighlight(key, true);
+      if (key === '=') setKeyHighlight('+', true);
+
+      // Prevent browser scrolling on Space / Arrow keys / Tab
+      if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(key)) {
+        e.preventDefault();
+      }
+
+      if (e.repeat && ['1', ' ', '3', 'f', 'enter', 'm', 'r', 'o', 'h', '?', 'tab', 'escape'].includes(key)) {
+        return;
+      }
+
+      if (key === 'escape') {
+        if (!modalBackdrop.classList.contains('hidden')) {
+          togglePatronageModal(false);
+        } else if (state.isBowing) {
+          toggleBowing();
+        }
+        return;
+      }
+
+      // Do not trigger scene actions while patronage modal is open (except O / Esc)
+      if (!modalBackdrop.classList.contains('hidden')) {
+        if (key === 'o') togglePatronageModal(false);
+        return;
+      }
+
+      if (key === '1' || key === ' ') toggleBowing();
+      else if (key === '2') rollPrayerBead();
+      else if (key === '3') triggerClaspGreeting();
+      else if (key === '4' || key === '5') triggerWoodenGong();
+      else if (key === 'f' || key === 'enter') sitOnNearestCushion();
+      else if (key === 'm') toggleAudio();
+      else if (key === 'r') resetCamera();
+      else if (key === 'tab') switchRoomChannel();
+      else if (key === 'o') togglePatronageModal();
+      else if (key === 'h' || key === '?' || key === '/') toggleKeyboardPanel();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const key = e.key.toLowerCase();
+      keysPressed.delete(key);
+      setKeyHighlight(key, false);
+      if (key === '=') setKeyHighlight('+', false);
+    });
+
+    window.addEventListener('blur', () => {
+      keysPressed.clear();
+      document.querySelectorAll('.kbd.pressed').forEach(el => el.classList.remove('pressed'));
+    });
+
     // =========================================================================
     // 6. MAIN RENDER & ANIMATION LOOP
     // =========================================================================
     const clock = new THREE.Clock();
+    let prevTime = 0;
     let lastBowCycle = 0;
 
     function animate() {
       requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
+      const dt = Math.min(0.1, elapsed - prevTime);
+      prevTime = elapsed;
 
-      // Smooth Player Movement toward Target Cushion or Floor Point
-      playerMonk.position.lerp(state.targetPosition, 0.08);
+      // Continuous Keyboard Camera Orbit & Zoom (Q/E and +/-)
+      if (modalBackdrop.classList.contains('hidden')) {
+        const rotSpeed = 1.6 * dt;
+        const zoomSpeed = 5.5 * dt;
+        if (keysPressed.has('q')) camAngleH += rotSpeed;
+        if (keysPressed.has('e')) camAngleH -= rotSpeed;
+        if (keysPressed.has('+') || keysPressed.has('=')) {
+          camDistance = Math.max(4.5, camDistance - zoomSpeed);
+        }
+        if (keysPressed.has('-') || keysPressed.has('_')) {
+          camDistance = Math.min(14.5, camDistance + zoomSpeed);
+        }
+
+        // Continuous Keyboard Avatar Movement (WASD / Arrow Keys)
+        let moveForward = 0;
+        let moveRight = 0;
+        if (keysPressed.has('w') || keysPressed.has('arrowup')) moveForward += 1;
+        if (keysPressed.has('s') || keysPressed.has('arrowdown')) moveForward -= 1;
+        if (keysPressed.has('d') || keysPressed.has('arrowright')) moveRight += 1;
+        if (keysPressed.has('a') || keysPressed.has('arrowleft')) moveRight -= 1;
+
+        if (moveForward !== 0 || moveRight !== 0) {
+          const len = Math.hypot(moveForward, moveRight);
+          moveForward /= len;
+          moveRight /= len;
+
+          const speed = (keysPressed.has('shift') ? 4.8 : 3.0) * dt;
+          const forwardX = -Math.sin(camAngleH);
+          const forwardZ = -Math.cos(camAngleH);
+          const rightX = Math.cos(camAngleH);
+          const rightZ = -Math.sin(camAngleH);
+
+          const dx = (forwardX * moveForward + rightX * moveRight) * speed;
+          const dz = (forwardZ * moveForward + rightZ * moveRight) * speed;
+
+          state.activeCushionIndex = -1;
+          if (state.isBowing) {
+            state.isBowing = false;
+            document.getElementById('act-bow').classList.remove('active');
+            playerMonk.userData.bodyPivot.rotation.x = 0;
+          }
+
+          state.targetPosition.x = Math.max(-7.5, Math.min(7.5, state.targetPosition.x + dx));
+          state.targetPosition.y = 0;
+          state.targetPosition.z = Math.max(-3.0, Math.min(6.5, state.targetPosition.z + dz));
+          state.targetYaw = Math.atan2(-dx, -dz);
+        }
+      }
+
+      // Smooth Player Movement & Orientation toward Target
+      playerMonk.position.lerp(state.targetPosition, 0.14);
+
+      // Smooth Shortest-Angle Yaw Interpolation
+      let yawDiff = state.targetYaw - playerMonk.rotation.y;
+      while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+      while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+      playerMonk.rotation.y += yawDiff * 0.16;
 
       // Player Bowing Animation & 108 Bow Counter
       if (state.isBowing) {

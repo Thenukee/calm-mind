@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>SANSA — Ambient 3D Sanctuary Reference</title>
+  <style>
+    :root {
+      --glass-bg: rgba(24, 24, 22, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.14);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --text-primary: #F5F5F0;
+      --text-secondary: #A8A69E;
+      --accent-gold: #E6C15A;
+      --accent-blue: #234785;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+    }
+
+    body, html {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #111310;
+      color: var(--text-primary);
+    }
+
+    #webgl-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Glassmorphic Shared Utility */
+    .glass-pill {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .glass-pill:hover {
+      background: rgba(38, 38, 34, 0.85);
+    }
+
+    .glass-pill:active {
+      transform: scale(0.97);
+    }
+
+    /* Top Left Instance Indicator */
+    .hud-top-left {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .instance-count {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Top Right Controls */
+    .hud-top-right {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: var(--glass-highlight);
+    }
+
+    .icon-btn.active {
+      background: rgba(230, 193, 90, 0.2);
+      color: var(--accent-gold);
+    }
+
+    .tooltip-pill {
+      font-size: 12px;
+      padding: 6px 12px;
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+
+    /* Bottom Action Dock */
+    .hud-bottom-dock {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .dock-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 78px;
+    }
+
+    .dock-btn:hover {
+      color: var(--text-primary);
+      background: var(--glass-highlight);
+    }
+
+    .dock-btn.active {
+      color: var(--accent-gold);
+      background: rgba(230, 193, 90, 0.14);
+    }
+
+    .dock-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .dock-label {
+      font-size: 11px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Session Counter Bottom Left */
+    .hud-bottom-left {
+      position: fixed;
+      bottom: 28px;
+      left: 24px;
+      z-index: 10;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .counter-Highlight {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Toast Notification for Non-Verbal Greetings */
+    #toast-container {
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast-msg {
+      background: rgba(20, 20, 18, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--text-primary);
+      animation: fadeToast 2.8s ease forwards;
+    }
+
+    @keyframes fadeToast {
+      0% { opacity: 0; transform: translateY(-8px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-6px); }
+    }
+
+    /* Center Patronage Modal (Gongyangmi / Offering Rice) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 25;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 1;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-backdrop.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .patronage-modal {
+      width: 100%;
+      max-width: 340px;
+      background: rgba(34, 33, 29, 0.86);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 24px;
+      padding: 22px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    .close-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #FFFFFF;
+    }
+
+    .modal-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    /* Bank Account Copy Card */
+    .bank-card {
+      background: linear-gradient(135deg, #244379 0%, #1B335E 100%);
+      border: 1px solid rgba(110, 160, 255, 0.28);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .bank-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .bank-name {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .bank-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #FFFFFF;
+      letter-spacing: 0.02em;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.14);
+      border: none;
+      color: #FFFFFF;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    /* White QR Code Card */
+    .qr-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: #111111;
+    }
+
+    .qr-brand {
+      align-self: flex-start;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .qr-placeholder {
+      width: 148px;
+      height: 148px;
+      background:
+        conic-gradient(from 90deg at 50% 50%, #111 25%, #fff 0 50%, #111 0 75%, #fff 0) 0 0 / 18px 18px;
+      border: 6px solid #111;
+      border-radius: 8px;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .qr-avatar-badge {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #D6E4FF;
+      border: 3px solid #FFFFFF;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+    }
+
+    .qr-owner {
+      font-size: 11px;
+      color: #555555;
+      font-weight: 500;
+    }
+
+    /* Buy Me a Coffee Button */
+    .bmac-btn {
+      background: #D4B23E;
+      color: #1A1813;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+
+    .bmac-btn:hover {
+      filter: brightness(1.08);
+    }
+
+    .modal-footer {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Viewport -->
+  <div id="webgl-container"></div>
+
+  <!-- Top Left Room Status & Server Selector -->
+  <div class="hud-top-left">
+    <button class="glass-pill" id="room-pill" title="Click to switch server channel">
+      <span>⇥</span>
+      <span id="room-name">mountain temple 56</span>
+      <span class="instance-count" id="room-occupancy">· 04/100</span>
+    </button>
+  </div>
+
+  <!-- Top Right Audio & Offering Controls -->
+  <div class="hud-top-right">
+    <div class="glass-pill control-group">
+      <button class="icon-btn active" id="btn-open-modal" title="Add Offering Rice (Gongyangmi)">🍚</button>
+      <button class="icon-btn" id="btn-toggle-audio" title="Toggle Ambient & Chanting Audio">🔇</button>
+      <button class="icon-btn" id="btn-reset-cam" title="Reset Camera View">⌖</button>
+    </div>
+    <div class="glass-pill tooltip-pill" id="audio-status-label">Stopping the Chanting</div>
+  </div>
+
+  <!-- Non-Verbal Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Bottom Left Session Metrics -->
+  <div class="hud-bottom-left">
+    <div>Me: <span class="counter-Highlight" id="my-monk-name">Slow Step (느린 발걸음)</span></div>
+    <div>108 Bows: <span class="counter-Highlight" id="bow-counter">0</span> · Prayer Beads: <span class="counter-Highlight" id="bead-counter">0 / 108</span></div>
+  </div>
+
+  <!-- Bottom Action Dock -->
+  <div class="hud-bottom-dock">
+    <button class="dock-btn" id="act-clasp">
+      <span class="dock-icon">🙏</span>
+      <span class="dock-label">clasp (3)</span>
+    </button>
+    <button class="dock-btn" id="act-bow">
+      <span class="dock-icon">🙇</span>
+      <span class="dock-label">bowing (1)</span>
+    </button>
+    <button class="dock-btn" id="act-moktak">
+      <span class="dock-icon">🔔</span>
+      <span class="dock-label">wooden gong (5)</span>
+    </button>
+    <button class="dock-btn" id="act-beads">
+      <span class="dock-icon">📿</span>
+      <span class="dock-label">prayer beads (2)</span>
+    </button>
+  </div>
+
+  <!-- Center Offering Rice (Gongyangmi) Patronage Modal -->
+  <div class="modal-backdrop" id="patronage-backdrop">
+    <div class="patronage-modal">
+      <div class="modal-header">
+        <span class="modal-title">공양미 보태기</span>
+        <button class="close-btn" id="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-subtitle">보시해 주신 마음, 감사히 받겠습니다. 🙇🏻‍♂️</div>
+
+      <div class="bank-card">
+        <div class="bank-info">
+          <span class="bank-name">토스뱅크 · 박진원</span>
+          <span class="bank-number" id="acct-num">1002-7657-4757</span>
+        </div>
+        <button class="copy-btn" id="btn-copy-acct">복사</button>
+      </div>
+
+      <div class="qr-card">
+        <div class="qr-brand">💬 pay</div>
+        <div class="qr-placeholder">
+          <div class="qr-avatar-badge">🧘🏻</div>
+        </div>
+        <div class="qr-owner">박진원</div>
+      </div>
+
+      <button class="bmac-btn" id="btn-bmac">
+        <span>🥤 Buy me a coffee</span>
+        <span>공양미 보내기</span>
+      </button>
+
+      <div class="modal-footer">공양미는 서버 운영과 콘텐츠 제작에 사용됩니다. 🙏</div>
+    </div>
+  </div>
+
+  <!-- Three.js r128+ via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // =========================================================================
+    // 1. PROCEDURAL POETIC NAMING & APPLICATION STATE
+    // =========================================================================
+    const POETIC_NAMES = [
+      "Slow Step (느린 발걸음)",
+      "Friendly Moss (다정한 이끼)",
+      "Quiet Cloud (고요한 구름)",
+      "Small Pine Needle (작은 솔잎)",
+      "Subtle Moonlight (은은한 달빛)"
+    ];
+    document.getElementById('my-monk-name').textContent =
+      POETIC_NAMES[Math.floor(Math.random() * POETIC_NAMES.length)];
+
+    const state = {
+      isBowing: false,
+      bowCount: 0,
+      beadCount: 0,
+      audioEnabled: false,
+      roomNumber: 56,
+      targetPosition: new THREE.Vector3(0, 0, 3.2),
+      activeCushionIndex: -1
+    };
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = 'toast-msg';
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 2800);
+    }
+
+    // =========================================================================
+    // 2. WEB AUDIO API SYNTHESIZER (ZERO EXTERNAL ASSETS REQUIRED)
+    // =========================================================================
+    let audioCtx = null;
+    let windGainNode = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+
+      // Pink noise generator for serene mountain wind
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.015;
+        b6 = white * 0.115926;
+      }
+
+      const whiteNoise = audioCtx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+      whiteNoise.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 380;
+
+      windGainNode = audioCtx.createGain();
+      windGainNode.gain.value = 0.0;
+
+      whiteNoise.connect(filter);
+      filter.connect(windGainNode);
+      windGainNode.connect(audioCtx.destination);
+      whiteNoise.start(0);
+    }
+
+    // Client-local percussive sound (Moktak / Bead click / Temple Bell)
+    function playAcousticStrike(freq = 620, decay = 0.18, type = 'triangle') {
+      if (!audioCtx) initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.72, audioCtx.currentTime + decay);
+
+      gain.gain.setValueAtTime(0.22, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + decay);
+    }
+
+    // Background tab auto-mute (Matching Sansa's production spec)
+    document.addEventListener('visibilitychange', () => {
+      if (!windGainNode || !audioCtx) return;
+      if (document.hidden) {
+        windGainNode.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+      } else if (state.audioEnabled) {
+        windGainNode.gain.setTargetAtTime(0.35, audioCtx.currentTime, 0.2);
+      }
+    });
+
+    // =========================================================================
+    // 3. THREE.JS 3D DHARMA HALL & AVATAR SCENE SETUP
+    // =========================================================================
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x161914);
+    scene.fog = new THREE.FogExp2(0x161914, 0.045);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camAngleH = 0;
+    let camAngleV = 0.32;
+    let camDistance = 9.5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    // Warm Monastic Lighting
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.45);
+    scene.add(ambientLight);
+
+    const altarLight = new THREE.PointLight(0xffaa44, 1.6, 18);
+    altarLight.position.set(0, 3.8, -4.2);
+    altarLight.castShadow = true;
+    scene.add(altarLight);
+
+    // Wooden Hall Floor
+    const floorGeo = new THREE.PlaneGeometry(18, 16);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x3b2618, roughness: 0.75 });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Timber Pillars & Open Forest Windows
+    const pillarGeo = new THREE.CylinderGeometry(0.28, 0.3, 6, 16);
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2a180d, roughness: 0.8 });
+    [-6.5, -2.5, 2.5, 6.5].forEach(x => {
+      [-5.5, 4.5].forEach(z => {
+        const p = new THREE.Mesh(pillarGeo, pillarMat);
+        p.position.set(x, 3, z);
+        p.castShadow = true;
+        scene.add(p);
+      });
+    });
+
+    // Central Altar & Golden Buddha Triad
+    const altarBase = new THREE.Mesh(
+      new THREE.BoxGeometry(6.4, 1.1, 2.0),
+      new THREE.MeshStandardMaterial({ color: 0x2b190e, roughness: 0.6 })
+    );
+    altarBase.position.set(0, 0.55, -5.0);
+    altarBase.castShadow = true;
+    scene.add(altarBase);
+
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xe6b84c,
+      metalness: 0.65,
+      roughness: 0.28
+    });
+
+    function createStatue(x, scale = 1) {
+      const group = new THREE.Group();
+      const lotus = new THREE.Mesh(new THREE.CylinderGeometry(0.65 * scale, 0.75 * scale, 0.35 * scale, 20), goldMat);
+      const torso = new THREE.Mesh(new THREE.ConeGeometry(0.55 * scale, 1.25 * scale, 16), goldMat);
+      torso.position.y = 0.75 * scale;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.32 * scale, 20, 20), goldMat);
+      head.position.y = 1.55 * scale;
+      const halo = new THREE.Mesh(
+        new THREE.RingGeometry(0.45 * scale, 0.62 * scale, 24),
+        new THREE.MeshBasicMaterial({ color: 0xffd266, side: THREE.DoubleSide })
+      );
+      halo.position.set(0, 1.55 * scale, -0.25 * scale);
+      group.add(lotus, torso, head, halo);
+      group.position.set(x, 1.1, -5.0);
+      return group;
+    }
+
+    scene.add(createStatue(0, 1.25));       // Central Seated Buddha
+    scene.add(createStatue(-1.85, 0.92));   // Left Attendant Bodhisattva
+    scene.add(createStatue(1.85, 0.92));    // Right Attendant Bodhisattva
+
+    // Gray Meditation Cushions (Bangseok) with Single-Occupancy State
+    const cushions = [];
+    const cushionGeo = new THREE.BoxGeometry(0.95, 0.08, 0.95);
+    const cushionMat = new THREE.MeshStandardMaterial({ color: 0x525450, roughness: 0.9 });
+    const cushionOccupiedMat = new THREE.MeshStandardMaterial({ color: 0x6b6759, roughness: 0.85 });
+
+    for (let row = 0; row < 4; row++) {
+      for (let col = -3; col <= 3; col++) {
+        const mesh = new THREE.Mesh(cushionGeo, cushionMat.clone());
+        const cx = col * 1.65;
+        const cz = -1.8 + row * 1.55;
+        mesh.position.set(cx, 0.04, cz);
+        mesh.receiveShadow = true;
+        mesh.userData = { index: cushions.length, occupiedByPeer: false };
+        scene.add(mesh);
+        cushions.push(mesh);
+      }
+    }
+
+    // Novice Monk (Dongjaseung) Avatar Builder
+    function createMonkAvatar(robeColor = 0x7b8076) {
+      const monk = new THREE.Group();
+      const bodyPivot = new THREE.Group();
+
+      // Robe Torso
+      const robe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.34, 0.58, 16),
+        new THREE.MeshStandardMaterial({ color: robeColor, roughness: 0.85 })
+      );
+      robe.position.y = 0.29;
+      robe.castShadow = true;
+
+      // Round Novice Monk Head
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.27, 20, 20),
+        new THREE.MeshStandardMaterial({ color: 0xf2cfb6, roughness: 0.65 })
+      );
+      head.position.y = 0.72;
+      head.castShadow = true;
+
+      // Clasped Hands
+      const hands = new THREE.Mesh(
+        new THREE.SphereGeometry(0.09, 12, 12),
+        new THREE.MeshStandardMaterial({ color: 0xf2cfb6 })
+      );
+      hands.position.set(0, 0.38, -0.24);
+      hands.visible = false;
+
+      bodyPivot.add(robe, head, hands);
+      monk.add(bodyPivot);
+      monk.userData = { bodyPivot, hands };
+      return monk;
+    }
+
+    // Player Avatar
+    const playerMonk = createMonkAvatar(0x8c9284);
+    playerMonk.position.copy(state.targetPosition);
+    scene.add(playerMonk);
+
+    // Silent Co-Present Peer Avatars (Simulated Cloudflare Worker Peers)
+    const peerSeats = [2, 5, 11];
+    const peers = peerSeats.map((seatIdx, i) => {
+      cushions[seatIdx].userData.occupiedByPeer = true;
+      cushions[seatIdx].material = cushionOccupiedMat;
+      const peer = createMonkAvatar(0x6e7368);
+      peer.position.set(cushions[seatIdx].position.x, 0.08, cushions[seatIdx].position.z);
+      peer.userData.phase = i * 2.1;
+      scene.add(peer);
+      return peer;
+    });
+
+    // =========================================================================
+    // 4. RAYCASTING NAVIGATION, SEAT LOCKING & CAMERA CONTROLS
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let isDragging = false;
+    let prevPointer = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      isDragging = false;
+      prevPointer = { x: e.clientX, y: e.clientY };
+    });
+
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      if (e.buttons !== 1) return;
+      const dx = e.clientX - prevPointer.x;
+      const dy = e.clientY - prevPointer.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        isDragging = true;
+        camAngleH -= dx * 0.006;
+        camAngleV = Math.max(0.12, Math.min(1.15, camAngleV + dy * 0.006));
+        prevPointer = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      if (isDragging) return;
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      // Check Cushion Clicks First (With Anti-Overlap Seat Protection)
+      const cushionHits = raycaster.intersectObjects(cushions);
+      if (cushionHits.length > 0) {
+        const hitCushion = cushionHits[0].object;
+        if (hitCushion.userData.occupiedByPeer) {
+          showToast("This cushion is already occupied by another practitioner.");
+          return;
+        }
+        state.activeCushionIndex = hitCushion.userData.index;
+        state.targetPosition.set(hitCushion.position.x, 0.08, hitCushion.position.z);
+        return;
+      }
+
+      // Otherwise Walk on Floor
+      const floorHits = raycaster.intersectObject(floorMesh);
+      if (floorHits.length > 0) {
+        const pt = floorHits[0].point;
+        state.activeCushionIndex = -1;
+        state.isBowing = false;
+        document.getElementById('act-bow').classList.remove('active');
+        state.targetPosition.set(
+          Math.max(-7.5, Math.min(7.5, pt.x)),
+          0,
+          Math.max(-3.0, Math.min(6.5, pt.z))
+        );
+      }
+    });
+
+    window.addEventListener('wheel', (e) => {
+      camDistance = Math.max(4.5, Math.min(14.5, camDistance + e.deltaY * 0.005));
+    });
+
+    // =========================================================================
+    // 5. RITUAL INTERACTIONS & UI EVENT BINDINGS
+    // =========================================================================
+    function triggerClaspGreeting() {
+      playerMonk.userData.hands.visible = true;
+      playAcousticStrike(880, 0.45, 'sine');
+      showToast("합장으로 인사했어요 · Greeted nearby monks with joined hands");
+      setTimeout(() => { playerMonk.userData.hands.visible = false; }, 1400);
+    }
+
+    function toggleBowing() {
+      state.isBowing = !state.isBowing;
+      document.getElementById('act-bow').classList.toggle('active', state.isBowing);
+      if (state.isBowing) {
+        showToast("Started 108 Bows · Press again to rise");
+      } else {
+        playerMonk.userData.bodyPivot.rotation.x = 0;
+      }
+    }
+
+    function triggerMoktak() {
+      playAcousticStrike(540, 0.14, 'triangle');
+      const btn = document.getElementById('act-moktak');
+      btn.classList.add('active');
+      setTimeout(() => btn.classList.remove('active'), 180);
+    }
+
+    function rollPrayerBead() {
+      state.beadCount = (state.beadCount + 1) % 109;
+      if (state.beadCount === 108) {
+        playAcousticStrike(1046, 0.8, 'sine');
+        showToast("Completed 108 Prayer Beads (한 바퀴 완주) 🙏");
+      } else {
+        playAcousticStrike(390, 0.09, 'sine');
+      }
+      document.getElementById('bead-counter').textContent = `${state.beadCount} / 108`;
+    }
+
+    document.getElementById('act-clasp').addEventListener('click', triggerClaspGreeting);
+    document.getElementById('act-bow').addEventListener('click', toggleBowing);
+    document.getElementById('act-moktak').addEventListener('click', triggerMoktak);
+    document.getElementById('act-beads').addEventListener('click', rollPrayerBead);
+
+    // Keyboard Shortcuts (Matching Sansa Temple Spec: 1/Space = Bow, 2 = Beads, 3 = Clasp, 5 = Moktak)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1' || e.key === ' ' || e.key === 'e' || e.key === 'E') toggleBowing();
+      if (e.key === '2') rollPrayerBead();
+      if (e.key === '3') triggerClaspGreeting();
+      if (e.key === '5') triggerMoktak();
+    });
+
+    // Audio Toggle
+    document.getElementById('btn-toggle-audio').addEventListener('click', (e) => {
+      initAudio();
+      state.audioEnabled = !state.audioEnabled;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      windGainNode.gain.setTargetAtTime(state.audioEnabled ? 0.35 : 0.0, audioCtx.currentTime, 0.2);
+      e.currentTarget.textContent = state.audioEnabled ? '🔊' : '🔇';
+      document.getElementById('audio-status-label').textContent =
+        state.audioEnabled ? 'Listening to Wind & Chanting' : 'Stopping the Chanting';
+    });
+
+    // Camera Reset
+    document.getElementById('btn-reset-cam').addEventListener('click', () => {
+      camAngleH = 0;
+      camAngleV = 0.32;
+      camDistance = 9.5;
+    });
+
+    // Server Channel Switching Simulation
+    document.getElementById('room-pill').addEventListener('click', () => {
+      state.roomNumber = (state.roomNumber % 100) + 1;
+      const randomUsers = Math.floor(Math.random() * 85) + 2;
+      document.getElementById('room-name').textContent = `mountain temple ${state.roomNumber}`;
+      document.getElementById('room-occupancy').textContent = `· ${String(randomUsers).padStart(2, '0')}/100`;
+      showToast(`Connected to Cheongyeondang Hall #${state.roomNumber}`);
+    });
+
+    // Modal Controls
+    const modalBackdrop = document.getElementById('patronage-backdrop');
+    document.getElementById('btn-open-modal').addEventListener('click', () => {
+      modalBackdrop.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      modalBackdrop.classList.add('hidden');
+    });
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) modalBackdrop.classList.add('hidden');
+    });
+
+    document.getElementById('btn-copy-acct').addEventListener('click', () => {
+      const acct = document.getElementById('acct-num').textContent;
+      navigator.clipboard?.writeText(acct);
+      showToast("Copied Toss Bank account number to clipboard");
+    });
+
+    document.getElementById('btn-bmac').addEventListener('click', () => {
+      showToast("Opening Buy Me a Coffee patronage link...");
+    });
+
+    // =========================================================================
+    // 6. MAIN RENDER & ANIMATION LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+    let lastBowCycle = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // Smooth Player Movement toward Target Cushion or Floor Point
+      playerMonk.position.lerp(state.targetPosition, 0.08);
+
+      // Player Bowing Animation & 108 Bow Counter
+      if (state.isBowing) {
+        const bowWave = (Math.sin(elapsed * 2.8) + 1) * 0.5; // 0 to 1
+        playerMonk.userData.bodyPivot.rotation.x = -bowWave * 0.75;
+        const currentCycle = Math.floor((elapsed * 2.8) / (Math.PI * 2));
+        if (currentCycle > lastBowCycle) {
+          lastBowCycle = currentCycle;
+          state.bowCount++;
+          document.getElementById('bow-counter').textContent = state.bowCount;
+        }
+      }
+
+      // Peer Novice Monks Subtle Bowing & Breathing
+      peers.forEach((peer) => {
+        const wave = (Math.sin(elapsed * 2.2 + peer.userData.phase) + 1) * 0.5;
+        peer.userData.bodyPivot.rotation.x = -wave * 0.65;
+      });
+
+      // Orbit Camera Tracking Player
+      camera.position.x = playerMonk.position.x + Math.sin(camAngleH) * Math.cos(camAngleV) * camDistance;
+      camera.position.y = playerMonk.position.y + Math.sin(camAngleV) * camDistance + 1.2;
+      camera.position.z = playerMonk.position.z + Math.cos(camAngleH) * Math.cos(camAngleV) * camDistance;
+      camera.lookAt(playerMonk.position.x, 1.2, playerMonk.position.z - 1.5);
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
